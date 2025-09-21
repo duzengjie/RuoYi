@@ -77,7 +77,6 @@ public class SysCaptchaController extends BaseController {
             }
         } catch (Exception e) {
             // 记录异常日志，便于问题排查
-            // Deleted:// 使用日志框架替代e.printStackTrace()
             log.error("出现异常",e);
         }
         return null;

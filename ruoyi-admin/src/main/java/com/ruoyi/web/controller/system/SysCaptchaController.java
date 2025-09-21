@@ -8,9 +8,6 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,9 +23,8 @@ import com.ruoyi.common.core.controller.BaseController;
  */
 @Controller
 @RequestMapping("/captcha")
-public class SysCaptchaController extends BaseController {
-    private static final Logger log = LoggerFactory.getLogger(SysProfileController.class);
-
+public class SysCaptchaController extends BaseController
+{
     @Resource(name = "captchaProducer")
     private Producer captchaProducer;
 
@@ -39,8 +35,11 @@ public class SysCaptchaController extends BaseController {
      * 验证码生成
      */
     @GetMapping(value = "/captchaImage")
-    public ModelAndView getKaptchaImage(HttpServletRequest request, HttpServletResponse response) {
-        try {
+    public ModelAndView getKaptchaImage(HttpServletRequest request, HttpServletResponse response)
+    {
+        ServletOutputStream out = null;
+        try
+        {
             HttpSession session = request.getSession();
             response.setDateHeader("Expires", 0);
             response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
@@ -52,32 +51,41 @@ public class SysCaptchaController extends BaseController {
             String capStr = null;
             String code = null;
             BufferedImage bi = null;
-
-            if (type.equals("math")) {
+            if ("math".equals(type))
+            {
                 String capText = captchaProducerMath.createText();
                 capStr = capText.substring(0, capText.lastIndexOf("@"));
                 code = capText.substring(capText.lastIndexOf("@") + 1);
                 bi = captchaProducerMath.createImage(capStr);
-            } else if ("char".equals(type)) {
-                capStr = code = captchaProducer.createText();
-                bi = captchaProducer.createImage(capStr);
-            } else {
-                // 默认处理方式，防止空指针异常
+            }
+            else if ("char".equals(type))
+            {
                 capStr = code = captchaProducer.createText();
                 bi = captchaProducer.createImage(capStr);
             }
-
-            // 将验证码存入session
             session.setAttribute(Constants.KAPTCHA_SESSION_KEY, code);
+            out = response.getOutputStream();
+            ImageIO.write(bi, "jpg", out);
+            out.flush();
 
-            // 输出验证码图片
-            try (ServletOutputStream out = response.getOutputStream()) {
-                ImageIO.write(bi, "jpg", out);
-                out.flush();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        finally
+        {
+            try
+            {
+                if (out != null)
+                {
+                    out.close();
+                }
             }
-        } catch (Exception e) {
-            // 记录异常日志，便于问题排查
-            log.error("出现异常",e);
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
         }
         return null;
     }
